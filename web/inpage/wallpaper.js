@@ -27,8 +27,9 @@
   const SETTINGS_TAB_ID = 'kimi-wallpaper-tab';
   const SETTINGS_PANEL_ID = 'kimi-wallpaper-settings';
   const SETTINGS_STYLE_ID = 'kimi-wallpaper-settings-style';
+  const SETTINGS_SURFACE_SELECTOR = '.settings-dialog, .settings-tab-list';
   const REFRESH_MS = 30_000;
-  const WALLPAPER_BUILD = '2026-11-13.52';
+  const WALLPAPER_BUILD = '2026-11-13.53';
 
   // Scoped-style attribute names used by Kimi Code's own settings UI. They are
   // read from the live dialog when it opens and only fall back to these values
@@ -95,6 +96,7 @@
     blur: 0,
     dim: 0.35,
     glass: 0.6,
+    tips: true,
     customName: '',
   };
   const SETTING_KEYS = [
@@ -107,6 +109,7 @@
     'blur',
     'dim',
     'glass',
+    'tips',
     'customName',
   ];
 
@@ -373,6 +376,22 @@ html.kimi-wallpaper-on .md[data-v-76d4f48a]:not(.markdown-renderer) {
   -webkit-backdrop-filter: blur(20px) saturate(1.15) !important;
   border: 1px solid var(--kw-card-border, rgba(255, 255, 255, 0.18)) !important;
 }
+html.kimi-wallpaper-on.kw-tips-on .ui-tip__bubble,
+html.kimi-wallpaper-on.kw-tips-on .mention-tip,
+html.kimi-wallpaper-on.kw-tips-on .tooltip-element {
+  background: var(--kw-tip-surface, rgba(41, 41, 41, 0.72)) !important;
+  color: var(--color-text, #ffffff) !important;
+  backdrop-filter: blur(20px) saturate(1.15) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.15) !important;
+}
+html.kimi-wallpaper-on.kw-tips-on .ui-tip__bubble,
+html.kimi-wallpaper-on.kw-tips-on .mention-tip {
+  box-shadow: 0 0 0 1px var(--kw-card-border, rgba(255, 255, 255, 0.18)), 0 10px 28px rgba(0, 0, 0, 0.28) !important;
+}
+html.kimi-wallpaper-on.kw-tips-on .mention-tip-caret,
+html.kimi-wallpaper-on.kw-tips-on .tooltip-arrow {
+  background: var(--kw-tip-surface, rgba(41, 41, 41, 0.72)) !important;
+}
 html.kimi-wallpaper-on .chat-dock:before {
   display: none !important;
 }
@@ -389,6 +408,9 @@ html.kimi-wallpaper-on .chat-scroll {
 `;
 
   const SETTINGS_CSS = `
+#kimi-wallpaper-tab {
+  order: 90;
+}
 #kimi-wallpaper-settings {
   display: none;
 }
@@ -526,9 +548,13 @@ html.kimi-wallpaper-on .chat-scroll {
   let settingsActive = false;
   let statusTimer = 0;
   let refreshTimer = 0;
-  let settingsTimer = 0;
+  let settingsScheduled = false;
+  let settingsPanelFrame = 0;
   let surfaceObserver = null;
+  let settingsObserver = null;
+  let settingsListObserver = null;
   let enforceTimer = 0;
+  let destroyed = false;
 
   function scopeName(selector, fallback) {
     const node = document.querySelector(selector);
@@ -809,6 +835,14 @@ html.kimi-wallpaper-on .chat-scroll {
     glass.input.max = '95';
     lookGroup.append(opacity.row, blur.row, dim.row, glass.row);
 
+    const tipsRow = settingsRow(scopes, '悬浮提示跟随主题', '鼠标悬停气泡改用和面板一致的半透明背景');
+    const tipsSwitch = settingsSwitch(scopes, () => {
+      state.tips = !state.tips;
+      commit();
+    });
+    tipsRow.appendChild(tipsSwitch);
+    lookGroup.appendChild(tipsRow);
+
     const resetSec = scopedEl('section', 'sec', scopes.shell);
     const resetTitle = scopedEl('h3', 'sec-title', scopes.shell);
     resetTitle.textContent = '其他';
@@ -838,6 +872,7 @@ html.kimi-wallpaper-on .chat-scroll {
       fit,
       position,
       sliders: { opacity, blur, dim, glass },
+      tipsSwitch,
     };
     return panel;
   }
@@ -875,6 +910,8 @@ html.kimi-wallpaper-on .chat-scroll {
     setSlider(controls.sliders.blur, Math.round(state.blur), `${Math.round(state.blur)}px`);
     setSlider(controls.sliders.dim, Math.round(state.dim * 100), `${Math.round(state.dim * 100)}%`);
     setSlider(controls.sliders.glass, Math.round(state.glass * 100), `${Math.round(state.glass * 100)}%`);
+    controls.tipsSwitch.classList.toggle('is-on', state.tips);
+    controls.tipsSwitch.setAttribute('aria-checked', String(state.tips));
     controls.image.hint.textContent = currentLabel();
     controls.image.customButton.style.display = customAvailable ? '' : 'none';
     controls.image.pluginButton.style.display = state.file ? '' : 'none';
@@ -912,6 +949,7 @@ html.kimi-wallpaper-on .chat-scroll {
       event.preventDefault();
       event.stopPropagation();
       settingsActive = true;
+      ensureSettingsPanel();
     } else {
       settingsActive = false;
       tab.classList.add('on');
@@ -935,9 +973,22 @@ html.kimi-wallpaper-on .chat-scroll {
     }
   }
 
+  function cancelSettingsPanel() {
+    if (!settingsPanelFrame) return;
+    if (typeof window.cancelAnimationFrame === 'function') {
+      window.cancelAnimationFrame(settingsPanelFrame);
+    } else {
+      clearTimeout(settingsPanelFrame);
+    }
+    settingsPanelFrame = 0;
+  }
+
   function resetSettingsUi() {
     clearTimeout(statusTimer);
     statusTimer = 0;
+    cancelSettingsPanel();
+    if (settingsListObserver) settingsListObserver.disconnect();
+    settingsListObserver = null;
     settingsDialog = null;
     settingsList = null;
     settingsBody = null;
@@ -948,7 +999,89 @@ html.kimi-wallpaper-on .chat-scroll {
     fileInput = null;
   }
 
+  function settingsNeedsService(dialog = document.querySelector('.settings-dialog')) {
+    if (!dialog) return Boolean(settingsDialog);
+    return (
+      dialog !== settingsDialog ||
+      !settingsList ||
+      !settingsList.isConnected ||
+      settingsList.querySelectorAll(`#${SETTINGS_TAB_ID}`).length !== 1 ||
+      !settingsTab ||
+      !settingsList.contains(settingsTab) ||
+      !settingsBody ||
+      !settingsBody.isConnected ||
+      !settingsPanel ||
+      !settingsBody.contains(settingsPanel)
+    );
+  }
+
+  function touchesSettingsSurface(node) {
+    if (!node || (node.nodeType !== 1 && node.nodeType !== 11)) return false;
+    if (typeof node.matches === 'function' && node.matches(SETTINGS_SURFACE_SELECTOR)) return true;
+    return typeof node.querySelector === 'function' && Boolean(node.querySelector(SETTINGS_SURFACE_SELECTOR));
+  }
+
+  function settingsRelevant(records) {
+    const dialog = document.querySelector('.settings-dialog');
+    if (dialog) return settingsNeedsService(dialog);
+    for (const record of records) {
+      for (const node of record.addedNodes) {
+        if (touchesSettingsSurface(node)) return true;
+      }
+      for (const node of record.removedNodes) {
+        if (touchesSettingsSurface(node)) return true;
+      }
+    }
+    return false;
+  }
+
+  function watchSettingsList(list) {
+    if (settingsListObserver) settingsListObserver.disconnect();
+    settingsListObserver = new MutationObserver(() => {
+      if (destroyed || settingsList !== list || !list.isConnected) return;
+      const tabs = list.querySelectorAll(`#${SETTINGS_TAB_ID}`);
+      if (tabs.length === 1 && tabs[0] === settingsTab) return;
+      scheduleSettings();
+    });
+    settingsListObserver.observe(list, { childList: true });
+  }
+
+  function ensureSettingsPanel() {
+    cancelSettingsPanel();
+    if (destroyed) return;
+    const dialog = settingsDialog;
+    const body = settingsBody;
+    if (!dialog || !dialog.isConnected || !body || !body.isConnected) return;
+    if (settingsPanel && body.contains(settingsPanel)) {
+      syncSettingsActive();
+      return;
+    }
+    if (settingsPanel && settingsPanel.isConnected) settingsPanel.remove();
+    settingsPanel = null;
+    settingsControls = null;
+    body.querySelectorAll(`#${SETTINGS_PANEL_ID}`).forEach((node) => node.remove());
+    settingsPanel = buildSettingsPanel();
+    body.appendChild(settingsPanel);
+    updateSettingsUi();
+    if (settingsActive) body.scrollTop = 0;
+    syncSettingsActive();
+  }
+
+  function scheduleSettingsPanel() {
+    if (settingsPanelFrame) return;
+    const run = () => {
+      settingsPanelFrame = 0;
+      ensureSettingsPanel();
+    };
+    if (typeof window.requestAnimationFrame === 'function') {
+      settingsPanelFrame = window.requestAnimationFrame(run);
+    } else {
+      settingsPanelFrame = window.setTimeout(run, 0);
+    }
+  }
+
   function serviceSettings() {
+    if (destroyed) return;
     const dialog = document.querySelector('.settings-dialog');
     if (!dialog) {
       if (settingsDialog) resetSettingsUi();
@@ -956,42 +1089,54 @@ html.kimi-wallpaper-on .chat-scroll {
     }
     const list = dialog.querySelector('.settings-tab-list');
     const body = dialog.querySelector('.settings-region .body');
-    if (!list || !body) return;
+    if (!list) return;
     if (dialog !== settingsDialog) {
       resetSettingsUi();
       dialog.querySelectorAll(`#${SETTINGS_TAB_ID}`).forEach((node) => node.remove());
       dialog.querySelectorAll(`#${SETTINGS_PANEL_ID}`).forEach((node) => node.remove());
       settingsDialog = dialog;
-      settingsBody = body;
       injectSettingsStyle();
     }
     if (settingsList !== list) {
       if (settingsList) settingsList.removeEventListener('click', onTabListClick, true);
       settingsList = list;
       list.addEventListener('click', onTabListClick, true);
+      watchSettingsList(list);
     }
-    if (settingsBody !== body) settingsBody = body;
-    if (!settingsTab || !settingsTab.isConnected) {
+    if (body && settingsBody !== body) {
+      settingsBody = body;
+      if (settingsPanel && !body.contains(settingsPanel)) {
+        if (settingsPanel.isConnected) settingsPanel.remove();
+        settingsPanel = null;
+        settingsControls = null;
+      }
+    }
+    if (!settingsTab || !list.contains(settingsTab)) {
       list.querySelectorAll(`#${SETTINGS_TAB_ID}`).forEach((node) => node.remove());
+      if (settingsTab && settingsTab.isConnected) settingsTab.remove();
       settingsTab = buildSettingsTab();
       list.appendChild(settingsTab);
+    } else {
+      for (const node of list.querySelectorAll(`#${SETTINGS_TAB_ID}`)) {
+        if (node !== settingsTab) node.remove();
+      }
     }
-    if (!settingsPanel || !settingsPanel.isConnected) {
-      body.querySelectorAll(`#${SETTINGS_PANEL_ID}`).forEach((node) => node.remove());
-      settingsPanel = buildSettingsPanel();
-      body.appendChild(settingsPanel);
-      updateSettingsUi();
-      if (settingsActive) body.scrollTop = 0;
+    // The tab is already in the DOM; defer the heavier panel to the next frame
+    // so mounting the tab stays on the fast path.
+    if (settingsBody && settingsBody.isConnected && (!settingsPanel || !settingsBody.contains(settingsPanel))) {
+      scheduleSettingsPanel();
     }
     syncSettingsActive();
   }
 
   function scheduleSettings() {
-    if (settingsTimer) return;
-    settingsTimer = setTimeout(() => {
-      settingsTimer = 0;
-      serviceSettings();
-    }, 60);
+    if (destroyed || settingsScheduled) return;
+    settingsScheduled = true;
+    queueMicrotask(() => {
+      settingsScheduled = false;
+      if (destroyed) return;
+      if (settingsNeedsService()) serviceSettings();
+    });
   }
 
   function num(value, fallback) {
@@ -1021,6 +1166,7 @@ html.kimi-wallpaper-on .chat-scroll {
       blur: round(clamp(num(s.blur, DEFAULTS.blur), 0, 32)),
       dim: round(clamp(num(s.dim, DEFAULTS.dim), 0, 0.9)),
       glass: round(clamp(num(s.glass, DEFAULTS.glass), 0, 0.95)),
+      tips: s.tips !== false,
       customName: typeof s.customName === 'string' ? s.customName : '',
     };
   }
@@ -1136,7 +1282,7 @@ html.kimi-wallpaper-on .chat-scroll {
     const lines = [];
     lines.push(`Kimi Wallpaper debug (${WALLPAPER_BUILD}) · Ctrl+Shift+W 关闭`);
     lines.push(
-      `state: source=${state.source} preset=${state.preset} file=${state.file || '-'} fit=${state.fit} position=${state.position} opacity=${state.opacity} blur=${state.blur} dim=${state.dim} glass=${state.glass}`
+      `state: source=${state.source} preset=${state.preset} file=${state.file || '-'} fit=${state.fit} position=${state.position} opacity=${state.opacity} blur=${state.blur} dim=${state.dim} glass=${state.glass} tips=${state.tips}`
     );
     const layer = document.getElementById(ROOT_ID);
     if (layer) {
@@ -1221,6 +1367,7 @@ html.kimi-wallpaper-on .chat-scroll {
     const source = resolveSource();
     const on = state.enabled && source.type !== 'none';
     document.documentElement.classList.toggle('kimi-wallpaper-on', on);
+    document.documentElement.classList.toggle('kw-tips-on', on && state.tips);
     layer.hidden = !on;
     updateSettingsUi();
     if (!on) return;
@@ -1261,6 +1408,11 @@ html.kimi-wallpaper-on .chat-scroll {
     root.setProperty(
       '--kw-menu-surface',
       `color-mix(in srgb, var(--color-menu-bg, #1f1f1f) ${menuAlpha}%, transparent)`
+    );
+    const tipAlpha = Math.max(20, Math.min(92, alpha + 16));
+    root.setProperty(
+      '--kw-tip-surface',
+      `color-mix(in srgb, var(--color-menu-bg, #1f1f1f) ${tipAlpha}%, transparent)`
     );
     const activeAlpha = Math.max(32, Math.min(88, alpha + 8));
     root.setProperty(
@@ -1441,9 +1593,12 @@ html.kimi-wallpaper-on .chat-scroll {
     updateSettingsUi();
     surfaceObserver = new MutationObserver(() => {
       scheduleEnforce();
-      scheduleSettings();
     });
     surfaceObserver.observe(document.body, { childList: true, subtree: true });
+    settingsObserver = new MutationObserver((records) => {
+      if (settingsRelevant(records)) scheduleSettings();
+    });
+    settingsObserver.observe(document.body, { childList: true, subtree: true });
     window.addEventListener('resize', scheduleEnforce);
     scheduleEnforce();
     serviceSettings();
@@ -1473,17 +1628,20 @@ html.kimi-wallpaper-on .chat-scroll {
   }
 
   function destroy() {
+    destroyed = true;
     clearInterval(refreshTimer);
-    clearTimeout(settingsTimer);
-    settingsTimer = 0;
+    cancelSettingsPanel();
     window.removeEventListener('resize', scheduleEnforce);
     clearTimeout(enforceTimer);
     enforceTimer = 0;
     if (surfaceObserver) surfaceObserver.disconnect();
     surfaceObserver = null;
+    if (settingsObserver) settingsObserver.disconnect();
+    settingsObserver = null;
     if (customUrl) URL.revokeObjectURL(customUrl);
     customUrl = null;
     document.documentElement.classList.remove('kimi-wallpaper-on');
+    document.documentElement.classList.remove('kw-tips-on');
     if (settingsTab) settingsTab.remove();
     if (settingsPanel) settingsPanel.remove();
     resetSettingsUi();

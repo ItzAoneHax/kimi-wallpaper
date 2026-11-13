@@ -1,7 +1,7 @@
 {
   "displayName": "Kimi Wallpaper",
   "shortDescription": "Replace the Kimi Code background with your own image or a gradient",
-  "longDescription": "Replaces the Kimi Code main background with a local image or a built-in gradient. The wallpaper sits behind the page; the chat area stays transparent while the sidebar, chat header and right panel become translucent so text remains readable. The Wallpaper page in Settings lets you change the image, opacity, blur, veil and surface opacity; the CLI can set an image too. A resident watchdog re-injects the page after Kimi Code updates.",
+  "longDescription": "Replaces the Kimi Code main background with a local image or a built-in gradient. The wallpaper sits behind the page; the chat area stays transparent while the sidebar, chat header and right panel become translucent so text remains readable. The Wallpaper page in Settings lets you change the image, opacity, blur, veil and surface opacity, and can also make hover tooltips follow the theme with a translucent frosted-glass background (toggleable); the CLI can set an image too. A resident watchdog re-injects the page after Kimi Code updates.",
   "developerName": "Kimi Code community",
   "tryPrompts": [
     "Use this image as my Kimi Code background",

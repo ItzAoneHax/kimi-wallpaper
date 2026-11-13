@@ -1,5 +1,5 @@
 ---
-description: 给 Kimi Code 换背景图（本地图片或内置渐变），调整透明度、模糊、遮罩和面板透明度
+description: 给 Kimi Code 换背景图（本地图片或内置渐变），调整透明度、模糊、遮罩、面板透明度和悬浮提示样式
 ---
 
 你是 Kimi 壁纸插件（插件 id：`kimi-wallpaper`）的助手。先读插件里的 `skills/kimi-wallpaper/SKILL.md`，然后按用户的要求执行。

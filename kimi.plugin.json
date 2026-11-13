@@ -1,8 +1,8 @@
 {
   "$schema": "https://statics.kimi.ai/catalog/schemas/kimi.plugin.schema.json",
   "name": "kimi-wallpaper",
-  "version": "1.1.4",
-  "description": "给 Kimi Code 换背景图：页内壁纸层、内置渐变、本地图片、透明度/模糊/遮罩/玻璃面板调节，客户端更新后自动修复",
+  "version": "1.2.0",
+  "description": "给 Kimi Code 换背景图：页内壁纸层、内置渐变、本地图片、透明度/模糊/遮罩/玻璃面板调节，悬浮提示跟随主题，客户端更新后自动修复",
   "keywords": ["wallpaper", "background", "theme", "kimi", "in-page"],
   "author": "Kimi Code community",
   "license": "MIT",
@@ -18,7 +18,7 @@
   "interface": {
     "displayName": "Kimi 壁纸",
     "shortDescription": "替换 Kimi Code 背景图，支持本地图片和渐变",
-    "longDescription": "把 Kimi Code 的主界面背景换成本地图片或内置渐变。壁纸铺在页面最底层，聊天区、侧栏和右侧面板改成半透明，文字仍然可读。设置里的“壁纸”页可以随时换图、调透明度、模糊、遮罩和面板透明度；也可以直接用 CLI 设置图片。Kimi Code 更新替换页面后，常驻看门狗会自动把注入补回去。",
+    "longDescription": "把 Kimi Code 的主界面背景换成本地图片或内置渐变。壁纸铺在页面最底层，聊天区、侧栏和右侧面板改成半透明，文字仍然可读。设置里的“壁纸”页可以随时换图、调透明度、模糊、遮罩和面板透明度；鼠标悬停提示气泡也能跟随主题改成半透明毛玻璃，可单独开关；也可以直接用 CLI 设置图片。Kimi Code 更新替换页面后，常驻看门狗会自动把注入补回去。",
     "developerName": "Kimi Code community",
     "category": "PRODUCTIVITY",
     "hostKind": "local",
