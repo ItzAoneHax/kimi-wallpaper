@@ -1,0 +1,16 @@
+{
+  "name": "kimi-wallpaper",
+  "version": "1.1.4",
+  "private": true,
+  "description": "In-page wallpaper replacement for Kimi Code",
+  "license": "MIT",
+  "scripts": {
+    "install-inpage": "node lib/cli.mjs install",
+    "remove-inpage": "node lib/cli.mjs remove",
+    "status": "node lib/cli.mjs status",
+    "doctor": "node lib/cli.mjs doctor"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
