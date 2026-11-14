@@ -29,7 +29,7 @@
   const SETTINGS_STYLE_ID = 'kimi-wallpaper-settings-style';
   const SETTINGS_SURFACE_SELECTOR = '.settings-dialog, .settings-tab-list';
   const REFRESH_MS = 30_000;
-  const WALLPAPER_BUILD = '2026-11-13.53';
+  const WALLPAPER_BUILD = '2026-11-14.4';
 
   // Scoped-style attribute names used by Kimi Code's own settings UI. They are
   // read from the live dialog when it opens and only fall back to these values
@@ -262,11 +262,64 @@ html.kimi-wallpaper-on .appr,
 html.kimi-wallpaper-on .composer-card,
 html.kimi-wallpaper-on .u-bub,
 html.kimi-wallpaper-on .ui-card,
-html.kimi-wallpaper-on .dock-work-panel,
-html.kimi-wallpaper-on .code-block-container {
+html.kimi-wallpaper-on .dock-work-panel {
   background: var(--kw-card-surface, rgba(41, 41, 41, 0.46)) !important;
   border: 1px solid var(--kw-card-border, rgba(255, 255, 255, 0.18)) !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18) !important;
+}
+/* Code blocks paint their own theme background on the inner pre/editor layers,
+   which would hide the wallpaper. Keep one slightly thicker glass surface on
+   the container and make every nested renderer transparent. */
+html.kimi-wallpaper-on .code-block-container {
+  --code-bg: transparent !important;
+  --vscode-editor-background: transparent !important;
+  --markstream-code-fallback-bg: transparent !important;
+  --markstream-code-theme-bg: transparent !important;
+  --markstream-pre-resolved-theme-bg: transparent !important;
+  --markstream-diff-editor-bg: transparent !important;
+  --markstream-diff-shell-bg: transparent !important;
+  --markstream-diff-panel-bg: transparent !important;
+  --markstream-diff-panel-bg-soft: transparent !important;
+  --markstream-diff-panel-bg-strong: transparent !important;
+  --markstream-diff-gutter-bg: transparent !important;
+  --diffs-bg: color-mix(in srgb, var(--color-surface-raised, #292929) 38%, transparent) !important;
+  background: var(--kw-glass-surface, rgba(41, 41, 41, 0.6)) !important;
+  border: 1px solid var(--kw-card-border, rgba(255, 255, 255, 0.18)) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(18px) saturate(1.15) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.15) !important;
+}
+html.kimi-wallpaper-on .turn-files .ui-card {
+  background: color-mix(in srgb, #ffffff 8%, var(--kw-glass-surface, rgba(41, 41, 41, 0.6))) !important;
+  border: 1px solid color-mix(in srgb, #ffffff 18%, transparent) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(18px) saturate(1.15) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.15) !important;
+}
+html.kimi-wallpaper-on .turn-files .ui-card .ui-card__head {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+}
+html.kimi-wallpaper-on .code-block-container .code-block-header {
+  background: var(--kw-glass-header, rgba(41, 41, 41, 0.68)) !important;
+  border-bottom: 1px solid var(--kw-card-border, rgba(255, 255, 255, 0.18)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+html.kimi-wallpaper-on .code-block-container .code-block-shell-content,
+html.kimi-wallpaper-on .code-block-container .code-editor-layer,
+html.kimi-wallpaper-on .code-block-container .code-editor-container,
+html.kimi-wallpaper-on .code-block-container .stream-diffs-shell,
+html.kimi-wallpaper-on .code-block-container diffs-container,
+html.kimi-wallpaper-on .code-block-container pre,
+html.kimi-wallpaper-on .code-block-container pre > code {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+html.kimi-wallpaper-on .code-block-container diffs-container {
+  --diffs-bg: color-mix(in srgb, var(--color-surface-raised, #292929) 38%, transparent) !important;
+  --diffs-light-bg: color-mix(in srgb, var(--color-surface-raised, #292929) 38%, transparent) !important;
+  --diffs-dark-bg: color-mix(in srgb, var(--color-surface-raised, #292929) 38%, transparent) !important;
 }
 html.kimi-wallpaper-on .code-block-header,
 html.kimi-wallpaper-on .ui-card__head,
@@ -1387,6 +1440,10 @@ html.kimi-wallpaper-on .chat-scroll {
     );
     const cardAlpha = Math.max(12, Math.min(64, alpha - 18));
     const headerAlpha = Math.max(18, Math.min(72, alpha - 8));
+    // Code blocks and file-change cards get one readable glass layer; code
+    // block renderers stay transparent so the wallpaper shows through.
+    const glassAlpha = Math.max(48, Math.min(84, cardAlpha + 26));
+    const glassHeaderAlpha = Math.min(90, glassAlpha + 8);
     root.setProperty(
       '--kw-card-surface',
       `color-mix(in srgb, var(--color-surface-raised, #292929) ${cardAlpha}%, transparent)`
@@ -1394,6 +1451,14 @@ html.kimi-wallpaper-on .chat-scroll {
     root.setProperty(
       '--kw-card-header',
       `color-mix(in srgb, var(--color-surface-raised, #292929) ${headerAlpha}%, transparent)`
+    );
+    root.setProperty(
+      '--kw-glass-surface',
+      `color-mix(in srgb, var(--color-surface-raised, #292929) ${glassAlpha}%, transparent)`
+    );
+    root.setProperty(
+      '--kw-glass-header',
+      `color-mix(in srgb, var(--color-surface-raised, #292929) ${glassHeaderAlpha}%, transparent)`
     );
     root.setProperty(
       '--kw-card-border',
