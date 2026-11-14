@@ -1,7 +1,7 @@
 {
   "$schema": "https://statics.kimi.ai/catalog/schemas/kimi.plugin.schema.json",
   "name": "kimi-wallpaper",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "给 Kimi Code 换背景图：页内壁纸层、内置渐变、本地图片、透明度/模糊/遮罩/玻璃面板调节，悬浮提示跟随主题，客户端更新后自动修复",
   "keywords": ["wallpaper", "background", "theme", "kimi", "in-page"],
   "author": "Kimi Code community",

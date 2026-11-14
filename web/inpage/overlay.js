@@ -12,11 +12,11 @@
   const STYLE_ID = 'kimi-wallpaper-overlay-style';
   const ROOT_CLASS = 'kimi-wallpaper-overlay';
   const CONFIG_URL = '/assets/kimi-wallpaper/config.json';
-  const OVERLAY_BUILD = '2026-11-13.45';
+  const OVERLAY_BUILD = '2026-11-15.46';
 
   const CSS = `
 html.${ROOT_CLASS} .ui-menu {
-  background: var(--kw-menu-surface, rgba(41, 41, 41, 0.44)) !important;
+  background: var(--kw-menu-surface, rgba(41, 41, 41, 0.82)) !important;
   border-color: var(--kw-card-border, rgba(255, 255, 255, 0.18)) !important;
   backdrop-filter: blur(20px) saturate(1.15) !important;
   -webkit-backdrop-filter: blur(20px) saturate(1.15) !important;
@@ -52,7 +52,9 @@ html.${ROOT_CLASS} .ui-menu-item.is-active {
     const value = Number(glass);
     const safe = Number.isFinite(value) ? Math.min(0.95, Math.max(0, value)) : 0.6;
     const alpha = Math.round((1 - safe) * 100);
-    const menuAlpha = Math.max(10, Math.min(72, alpha - 22));
+    // The overlay window has no wallpaper of its own, so backdrop-filter has
+    // nothing to sample through it. Keep these menus nearly opaque instead.
+    const menuAlpha = Math.max(80, Math.min(95, alpha + 44));
     const activeAlpha = Math.max(32, Math.min(88, alpha + 8));
     const root = document.documentElement.style;
     root.setProperty(

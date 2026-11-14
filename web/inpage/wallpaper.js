@@ -29,7 +29,7 @@
   const SETTINGS_STYLE_ID = 'kimi-wallpaper-settings-style';
   const SETTINGS_SURFACE_SELECTOR = '.settings-dialog, .settings-tab-list';
   const REFRESH_MS = 30_000;
-  const WALLPAPER_BUILD = '2026-11-14.4';
+  const WALLPAPER_BUILD = '2026-11-15.1';
 
   // Scoped-style attribute names used by Kimi Code's own settings UI. They are
   // read from the live dialog when it opens and only fall back to these values
@@ -222,7 +222,7 @@ html.kimi-wallpaper-on .workspace-hover-card,
 html.kimi-wallpaper-on .ui-menu,
 html.kimi-wallpaper-on .ui-select__menu,
 html.kimi-wallpaper-on .ws-panel {
-  background: var(--kw-menu-surface, rgba(41, 41, 41, 0.44)) !important;
+  background: var(--kw-menu-surface, rgba(41, 41, 41, 0.82)) !important;
   backdrop-filter: blur(20px) saturate(1.15) !important;
   -webkit-backdrop-filter: blur(20px) saturate(1.15) !important;
   border-color: var(--kw-card-border, rgba(255, 255, 255, 0.18)) !important;
@@ -424,7 +424,7 @@ html.kimi-wallpaper-on .bsrc-pill {
   -webkit-backdrop-filter: blur(14px) saturate(1.15) !important;
 }
 html.kimi-wallpaper-on .md[data-v-76d4f48a]:not(.markdown-renderer) {
-  background: var(--kw-menu-surface, rgba(41, 41, 41, 0.44)) !important;
+  background: var(--kw-menu-surface, rgba(41, 41, 41, 0.82)) !important;
   backdrop-filter: blur(20px) saturate(1.15) !important;
   -webkit-backdrop-filter: blur(20px) saturate(1.15) !important;
   border: 1px solid var(--kw-card-border, rgba(255, 255, 255, 0.18)) !important;
@@ -456,6 +456,15 @@ html.kimi-wallpaper-on .chat-scroll {
   mask-size: 100% 100%;
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
+}
+/* A mask makes .chat-scroll the backdrop root for everything inside it, so a
+   popover's backdrop-filter can no longer sample the wallpaper. The workspace
+   panel only exists in the empty conversation, where there is no chat text for
+   the composer fade to soften. */
+html.kimi-wallpaper-on .panes:has(.ws-panel),
+html.kimi-wallpaper-on .chat-scroll:has(.ws-panel) {
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
 }
 
 `;
@@ -1469,7 +1478,10 @@ html.kimi-wallpaper-on .chat-scroll {
       '--kw-dialog-surface',
       `color-mix(in srgb, var(--color-surface-raised, #292929) ${dialogAlpha}%, transparent)`
     );
-    const menuAlpha = Math.max(10, Math.min(72, alpha - 22));
+    // Menus float over arbitrary text and photos, so they keep a much higher
+    // floor than the sidebar or cards. Too little surface turns white labels
+    // into a grey blur over a bright wallpaper.
+    const menuAlpha = Math.max(80, Math.min(95, alpha + 44));
     root.setProperty(
       '--kw-menu-surface',
       `color-mix(in srgb, var(--color-menu-bg, #1f1f1f) ${menuAlpha}%, transparent)`
