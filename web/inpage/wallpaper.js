@@ -29,7 +29,7 @@
   const SETTINGS_STYLE_ID = 'kimi-wallpaper-settings-style';
   const SETTINGS_SURFACE_SELECTOR = '.settings-dialog, .settings-tab-list';
   const REFRESH_MS = 30_000;
-  const WALLPAPER_BUILD = '2026-11-15.1';
+  const WALLPAPER_BUILD = '2026-11-15.3';
 
   // Scoped-style attribute names used by Kimi Code's own settings UI. They are
   // read from the live dialog when it opens and only fall back to these values
@@ -172,7 +172,10 @@ html.kimi-wallpaper-on .content-wrap,
 html.kimi-wallpaper-on .chat,
 html.kimi-wallpaper-on .pt-shell,
 html.kimi-wallpaper-on .ptt,
-html.kimi-wallpaper-on .pt-body {
+html.kimi-wallpaper-on .pt-body,
+html.kimi-wallpaper-on .agent-panel,
+html.kimi-wallpaper-on .file-preview,
+html.kimi-wallpaper-on .fp-code {
   background: transparent !important;
   background-image: none !important;
   backdrop-filter: none !important;
@@ -343,6 +346,7 @@ html.kimi-wallpaper-on .btd-stack {
   background: transparent !important;
 }
 html.kimi-wallpaper-on .u-bub,
+html.kimi-wallpaper-on .agent-prompt-bubble,
 html.kimi-wallpaper-on .composer-card {
   background: color-mix(in srgb, #ffffff 8%, var(--kw-card-surface, rgba(41, 41, 41, 0.46))) !important;
   border: 1px solid color-mix(in srgb, #ffffff 18%, transparent) !important;
