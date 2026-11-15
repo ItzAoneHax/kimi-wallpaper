@@ -29,7 +29,7 @@
   const SETTINGS_STYLE_ID = 'kimi-wallpaper-settings-style';
   const SETTINGS_SURFACE_SELECTOR = '.settings-dialog, .settings-tab-list';
   const REFRESH_MS = 30_000;
-  const WALLPAPER_BUILD = '2026-11-15.3';
+  const WALLPAPER_BUILD = '2026-11-15.4';
 
   // Scoped-style attribute names used by Kimi Code's own settings UI. They are
   // read from the live dialog when it opens and only fall back to these values
@@ -464,9 +464,13 @@ html.kimi-wallpaper-on .chat-scroll {
 /* A mask makes .chat-scroll the backdrop root for everything inside it, so a
    popover's backdrop-filter can no longer sample the wallpaper. The workspace
    panel only exists in the empty conversation, where there is no chat text for
-   the composer fade to soften. */
+   the composer fade to soften. The empty conversation also renders its own
+   composer (.empty-composer) inside this scroll container rather than in
+   .chat-dock, so the fade would clip the first-run input too. */
 html.kimi-wallpaper-on .panes:has(.ws-panel),
-html.kimi-wallpaper-on .chat-scroll:has(.ws-panel) {
+html.kimi-wallpaper-on .chat-scroll:has(.ws-panel),
+html.kimi-wallpaper-on .panes:has(.empty-composer),
+html.kimi-wallpaper-on .chat-scroll:has(.empty-composer) {
   -webkit-mask-image: none !important;
   mask-image: none !important;
 }
