@@ -29,7 +29,7 @@
   const SETTINGS_STYLE_ID = 'kimi-wallpaper-settings-style';
   const SETTINGS_SURFACE_SELECTOR = '.settings-dialog, .settings-tab-list';
   const REFRESH_MS = 30_000;
-  const WALLPAPER_BUILD = '2026-11-15.4';
+  const WALLPAPER_BUILD = '2026-11-22.1';
 
   // Scoped-style attribute names used by Kimi Code's own settings UI. They are
   // read from the live dialog when it opens and only fall back to these values
@@ -244,6 +244,21 @@ html.kimi-wallpaper-on .ui-dialog__head,
 html.kimi-wallpaper-on .ui-dialog__foot {
   background: var(--kw-card-header, rgba(41, 41, 41, 0.54)) !important;
   border-color: var(--kw-card-border, rgba(255, 255, 255, 0.18)) !important;
+}
+/* Settings subpages pin their own header and footer bands to the scroll
+   container and paint them with the opaque theme background. Left alone they
+   cut the wallpaper into black strips, so they get the same glass surface as
+   the dialog chrome. The footer's offset shadow repeats --color-bg below the
+   band and has to go for the same reason. */
+html.kimi-wallpaper-on .re-page-head,
+html.kimi-wallpaper-on .pf-head-sticky,
+html.kimi-wallpaper-on .ap-top,
+html.kimi-wallpaper-on .re-foot,
+html.kimi-wallpaper-on .pf-foot,
+html.kimi-wallpaper-on .ap-foot {
+  background: var(--kw-card-header, rgba(41, 41, 41, 0.54)) !important;
+  border-color: var(--kw-card-border, rgba(255, 255, 255, 0.18)) !important;
+  box-shadow: none !important;
 }
 html.kimi-wallpaper-on .ui-dialog__overlay {
   background: rgba(0, 0, 0, 0.22) !important;
