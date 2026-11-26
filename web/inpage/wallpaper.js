@@ -30,7 +30,7 @@
   const SETTINGS_SURFACE_SELECTOR = '.settings-dialog, .settings-tab-list';
   const FADE_LIST_SELECTOR = '.sm-picker__models';
   const REFRESH_MS = 30_000;
-  const WALLPAPER_BUILD = '2026-11-23.1';
+  const WALLPAPER_BUILD = '2026-11-26.1';
 
   // Scoped-style attribute names used by Kimi Code's own settings UI. They are
   // read from the live dialog when it opens and only fall back to these values
@@ -225,6 +225,8 @@ html.kimi-wallpaper-on .panel-add-menu,
 html.kimi-wallpaper-on .workspace-hover-card,
 html.kimi-wallpaper-on .ui-menu,
 html.kimi-wallpaper-on .ui-select__menu,
+html.kimi-wallpaper-on .mention-menu:not(.is-sheet),
+html.kimi-wallpaper-on .slash-menu:not(.is-sheet),
 html.kimi-wallpaper-on .ws-panel {
   background: var(--kw-menu-surface, rgba(41, 41, 41, 0.82)) !important;
   backdrop-filter: blur(20px) saturate(1.15) !important;
@@ -482,13 +484,30 @@ html.kimi-wallpaper-on .chat-scroll {
    panel only exists in the empty conversation, where there is no chat text for
    the composer fade to soften. The empty conversation also renders its own
    composer (.empty-composer) inside this scroll container rather than in
-   .chat-dock, so the fade would clip the first-run input too. */
+   .chat-dock, so the fade would clip the first-run input too. The mention and
+   slash menus are anchored to the composer; they need the fade out of the way
+   while open for the same reason. */
 html.kimi-wallpaper-on .panes:has(.ws-panel),
 html.kimi-wallpaper-on .chat-scroll:has(.ws-panel),
 html.kimi-wallpaper-on .panes:has(.empty-composer),
-html.kimi-wallpaper-on .chat-scroll:has(.empty-composer) {
+html.kimi-wallpaper-on .chat-scroll:has(.empty-composer),
+html.kimi-wallpaper-on .panes:has(.mention-menu:not(.is-sheet)),
+html.kimi-wallpaper-on .chat-scroll:has(.mention-menu:not(.is-sheet)),
+html.kimi-wallpaper-on .panes:has(.slash-menu:not(.is-sheet)),
+html.kimi-wallpaper-on .chat-scroll:has(.slash-menu:not(.is-sheet)) {
   -webkit-mask-image: none !important;
   mask-image: none !important;
+}
+
+/* The mention and slash menus live inside the composer card. That card gets a
+   glass blur of its own, and an element with backdrop-filter is a backdrop
+   root for its descendants, so the menu's blur could only sample the card
+   itself and the chat text behind the menu would stay sharp. The menu already
+   draws its own glass surface, so the card's blur is redundant while open. */
+html.kimi-wallpaper-on .composer-card:has(.mention-menu:not(.is-sheet)),
+html.kimi-wallpaper-on .composer-card:has(.slash-menu:not(.is-sheet)) {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 /* The secondary-model picker on the providers page scrolls its model list
