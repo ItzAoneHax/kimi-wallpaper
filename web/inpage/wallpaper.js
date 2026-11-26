@@ -30,7 +30,7 @@
   const SETTINGS_SURFACE_SELECTOR = '.settings-dialog, .settings-tab-list';
   const FADE_LIST_SELECTOR = '.sm-picker__models';
   const REFRESH_MS = 30_000;
-  const WALLPAPER_BUILD = '2026-11-26.1';
+  const WALLPAPER_BUILD = '2026-11-26.2';
 
   // Scoped-style attribute names used by Kimi Code's own settings UI. They are
   // read from the live dialog when it opens and only fall back to these values
@@ -223,6 +223,7 @@ html.kimi-wallpaper-on .session-info.is-floating {
 }
 html.kimi-wallpaper-on .panel-add-menu,
 html.kimi-wallpaper-on .workspace-hover-card,
+html.kimi-wallpaper-on .add-menu,
 html.kimi-wallpaper-on .ui-menu,
 html.kimi-wallpaper-on .ui-select__menu,
 html.kimi-wallpaper-on .mention-menu:not(.is-sheet),
@@ -494,7 +495,9 @@ html.kimi-wallpaper-on .chat-scroll:has(.empty-composer),
 html.kimi-wallpaper-on .panes:has(.mention-menu:not(.is-sheet)),
 html.kimi-wallpaper-on .chat-scroll:has(.mention-menu:not(.is-sheet)),
 html.kimi-wallpaper-on .panes:has(.slash-menu:not(.is-sheet)),
-html.kimi-wallpaper-on .chat-scroll:has(.slash-menu:not(.is-sheet)) {
+html.kimi-wallpaper-on .chat-scroll:has(.slash-menu:not(.is-sheet)),
+html.kimi-wallpaper-on .panes:has(.add-menu),
+html.kimi-wallpaper-on .chat-scroll:has(.add-menu) {
   -webkit-mask-image: none !important;
   mask-image: none !important;
 }
@@ -505,7 +508,8 @@ html.kimi-wallpaper-on .chat-scroll:has(.slash-menu:not(.is-sheet)) {
    itself and the chat text behind the menu would stay sharp. The menu already
    draws its own glass surface, so the card's blur is redundant while open. */
 html.kimi-wallpaper-on .composer-card:has(.mention-menu:not(.is-sheet)),
-html.kimi-wallpaper-on .composer-card:has(.slash-menu:not(.is-sheet)) {
+html.kimi-wallpaper-on .composer-card:has(.slash-menu:not(.is-sheet)),
+html.kimi-wallpaper-on .composer-card:has(.add-menu) {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
