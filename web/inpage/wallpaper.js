@@ -28,8 +28,9 @@
   const SETTINGS_PANEL_ID = 'kimi-wallpaper-settings';
   const SETTINGS_STYLE_ID = 'kimi-wallpaper-settings-style';
   const SETTINGS_SURFACE_SELECTOR = '.settings-dialog, .settings-tab-list';
+  const FADE_LIST_SELECTOR = '.sm-picker__models';
   const REFRESH_MS = 30_000;
-  const WALLPAPER_BUILD = '2026-11-22.1';
+  const WALLPAPER_BUILD = '2026-11-23.1';
 
   // Scoped-style attribute names used by Kimi Code's own settings UI. They are
   // read from the live dialog when it opens and only fall back to these values
@@ -490,6 +491,22 @@ html.kimi-wallpaper-on .chat-scroll:has(.empty-composer) {
   mask-image: none !important;
 }
 
+/* The secondary-model picker on the providers page scrolls its model list
+   without the edge fades Kimi Code gives its other scrolling menus. The
+   script mirrors the app's slash/mention menus: fade only the edges that
+   still have content beyond them. */
+.sm-picker__models[data-kw-fade='top'] {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 var(--menu-scroll-fade, 20px));
+  mask-image: linear-gradient(to bottom, transparent, #000 var(--menu-scroll-fade, 20px));
+}
+.sm-picker__models[data-kw-fade='bottom'] {
+  -webkit-mask-image: linear-gradient(to top, transparent, #000 var(--menu-scroll-fade, 20px));
+  mask-image: linear-gradient(to top, transparent, #000 var(--menu-scroll-fade, 20px));
+}
+.sm-picker__models[data-kw-fade='both'] {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 var(--menu-scroll-fade, 20px), #000 calc(100% - var(--menu-scroll-fade, 20px)), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 var(--menu-scroll-fade, 20px), #000 calc(100% - var(--menu-scroll-fade, 20px)), transparent 100%);
+}
 `;
 
   const SETTINGS_CSS = `
@@ -639,6 +656,7 @@ html.kimi-wallpaper-on .chat-scroll:has(.empty-composer) {
   let settingsObserver = null;
   let settingsListObserver = null;
   let enforceTimer = 0;
+  let listFadeFrame = 0;
   let destroyed = false;
 
   function scopeName(selector, fallback) {
@@ -1438,6 +1456,36 @@ html.kimi-wallpaper-on .chat-scroll:has(.empty-composer) {
     root.setProperty('--kw-fade-end', `${end}px`);
   }
 
+  function updateListFade(list) {
+    const top = list.scrollTop > 0;
+    const bottom = list.scrollTop + list.clientHeight < list.scrollHeight - 1;
+    const fade = top && bottom ? 'both' : top ? 'top' : bottom ? 'bottom' : '';
+    if (fade) {
+      if (list.dataset.kwFade !== fade) list.dataset.kwFade = fade;
+    } else if (list.dataset.kwFade) {
+      delete list.dataset.kwFade;
+    }
+  }
+
+  function updateListFades() {
+    for (const list of document.querySelectorAll(FADE_LIST_SELECTOR)) updateListFade(list);
+  }
+
+  function scheduleListFades() {
+    if (listFadeFrame || destroyed) return;
+    listFadeFrame = window.requestAnimationFrame(() => {
+      listFadeFrame = 0;
+      if (!destroyed) updateListFades();
+    });
+  }
+
+  function onListScroll(event) {
+    const target = event.target;
+    if (target && typeof target.matches === 'function' && target.matches(FADE_LIST_SELECTOR)) {
+      updateListFade(target);
+    }
+  }
+
   function scheduleEnforce() {
     if (enforceTimer) return;
     enforceTimer = setTimeout(() => {
@@ -1693,6 +1741,7 @@ html.kimi-wallpaper-on .chat-scroll:has(.empty-composer) {
     updateSettingsUi();
     surfaceObserver = new MutationObserver(() => {
       scheduleEnforce();
+      scheduleListFades();
     });
     surfaceObserver.observe(document.body, { childList: true, subtree: true });
     settingsObserver = new MutationObserver((records) => {
@@ -1700,6 +1749,8 @@ html.kimi-wallpaper-on .chat-scroll:has(.empty-composer) {
     });
     settingsObserver.observe(document.body, { childList: true, subtree: true });
     window.addEventListener('resize', scheduleEnforce);
+    window.addEventListener('resize', scheduleListFades);
+    document.addEventListener('scroll', onListScroll, true);
     scheduleEnforce();
     serviceSettings();
     refreshTimer = window.setInterval(() => {
@@ -1732,8 +1783,13 @@ html.kimi-wallpaper-on .chat-scroll:has(.empty-composer) {
     clearInterval(refreshTimer);
     cancelSettingsPanel();
     window.removeEventListener('resize', scheduleEnforce);
+    window.removeEventListener('resize', scheduleListFades);
+    document.removeEventListener('scroll', onListScroll, true);
     clearTimeout(enforceTimer);
     enforceTimer = 0;
+    if (listFadeFrame) window.cancelAnimationFrame(listFadeFrame);
+    listFadeFrame = 0;
+    for (const list of document.querySelectorAll(FADE_LIST_SELECTOR)) delete list.dataset.kwFade;
     if (surfaceObserver) surfaceObserver.disconnect();
     surfaceObserver = null;
     if (settingsObserver) settingsObserver.disconnect();
